@@ -1,0 +1,272 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SafeGate Swap</title>
+<style>
+*{box-sizing:border-box}
+body{
+  margin:0;
+  min-height:100vh;
+  font-family:Inter,Segoe UI,Arial,sans-serif;
+  background:
+    radial-gradient(circle at 20% 0%,rgba(90,90,255,.20),transparent 35%),
+    #07090f;
+  color:#f5f7ff;
+}
+nav{
+  height:72px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:0 7vw;
+  border-bottom:1px solid #1c2130;
+}
+.brand{font-size:22px;font-weight:800}
+.brand span{opacity:.55;font-weight:500}
+.status{
+  border:1px solid #30384c;
+  border-radius:100px;
+  padding:8px 13px;
+  font-size:12px;
+  color:#aeb7ca
+}
+main{
+  max-width:1120px;
+  margin:0 auto;
+  padding:75px 24px;
+  display:grid;
+  grid-template-columns:1fr 460px;
+  gap:70px;
+  align-items:center
+}
+h1{
+  font-size:58px;
+  line-height:1.02;
+  margin:0 0 22px;
+  letter-spacing:-2px
+}
+.lead{
+  color:#9ca8bd;
+  font-size:18px;
+  line-height:1.7;
+  max-width:580px
+}
+.flow{
+  margin-top:34px;
+  color:#7f8ba1;
+  line-height:2
+}
+.flow b{color:#fff}
+.card{
+  background:rgba(16,19,29,.92);
+  border:1px solid #293044;
+  box-shadow:0 24px 80px rgba(0,0,0,.40);
+  border-radius:26px;
+  padding:24px
+}
+.card-title{
+  display:flex;
+  justify-content:space-between;
+  margin-bottom:22px
+}
+.card-title b{font-size:20px}
+.badge{font-size:11px;color:#8d98ac}
+label{
+  display:block;
+  color:#8995a9;
+  font-size:12px;
+  margin-bottom:7px
+}
+.field{
+  background:#0b0e16;
+  border:1px solid #262d3c;
+  border-radius:15px;
+  padding:14px;
+  margin-bottom:13px
+}
+input{
+  width:100%;
+  border:0;
+  outline:0;
+  background:transparent;
+  color:#fff;
+  font-size:15px
+}
+button{
+  width:100%;
+  border:0;
+  border-radius:15px;
+  padding:16px;
+  font-size:15px;
+  font-weight:800;
+  cursor:pointer
+}
+.prepare{
+  background:#fff;
+  color:#090b10;
+  margin-top:8px
+}
+.swap{
+  margin-top:10px;
+  background:#202534;
+  color:#69748a;
+  cursor:not-allowed
+}
+.result{
+  display:none;
+  margin-top:16px;
+  padding:14px;
+  border:1px solid #273048;
+  border-radius:14px;
+  font-size:12px;
+  line-height:1.65;
+  color:#b9c3d5;
+  white-space:pre-wrap
+}
+.footer{
+  margin-top:17px;
+  font-size:11px;
+  line-height:1.6;
+  color:#697489
+}
+.green{color:#73e6ab}
+@media(max-width:850px){
+  main{grid-template-columns:1fr;padding-top:45px}
+  h1{font-size:42px}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="brand">SafeGate <span>Swap</span></div>
+  <div class="status" id="sdkStatus">Checking SilentSwap SDK...</div>
+</nav>
+
+<main>
+
+<section>
+  <h1>Private execution.<br>Verifiable outcome.</h1>
+
+  <div class="lead">
+    A SafeGate agent ready swap surface powered by SilentSwap.
+    SilentSwap remains the execution layer. SafeGate adds request
+    binding and post execution assurance.
+  </div>
+
+  <div class="flow">
+    <b>Human or AI Agent</b><br>
+    ↓ SafeGate intent and policy<br>
+    ↓ SilentSwap execution<br>
+    ↓ External wallet authorization<br>
+    <b>↓ SafeGate CommerceProof</b>
+  </div>
+</section>
+
+<section class="card">
+
+  <div class="card-title">
+    <b>Prepare Swap</b>
+    <span class="badge">V1 LOCAL PREVIEW</span>
+  </div>
+
+  <div class="field">
+    <label>FROM ASSET</label>
+    <input id="fromAsset"
+      value="USDC"
+      placeholder="USDC">
+  </div>
+
+  <div class="field">
+    <label>TO ASSET</label>
+    <input id="toAsset"
+      value="ETH"
+      placeholder="ETH">
+  </div>
+
+  <div class="field">
+    <label>AMOUNT</label>
+    <input id="amount"
+      value="1"
+      placeholder="1.00">
+  </div>
+
+  <div class="field">
+    <label>RECIPIENT</label>
+    <input id="recipient"
+      placeholder="0x...">
+  </div>
+
+  <button class="prepare" onclick="prepareSwap()">
+    Prepare Agent Swap Intent
+  </button>
+
+  <button class="swap" disabled>
+    Live Swap Locked Until Whitelist
+  </button>
+
+  <div class="result" id="result"></div>
+
+  <div class="footer">
+    <span class="green">● Non custodial</span><br>
+    Wallet signing authority remains external.<br>
+    No transaction is submitted by this preview.
+  </div>
+
+</section>
+
+</main>
+
+<script>
+async function boot(){
+  try{
+    const r = await fetch("/api/capabilities");
+    const d = await r.json();
+
+    if(
+      d.ok &&
+      d.methods.quote &&
+      d.methods.placeOrder &&
+      d.methods.trackOrderViaWebSocket
+    ){
+      document.getElementById("sdkStatus").textContent =
+        "SilentSwap SDK connected";
+    }else{
+      document.getElementById("sdkStatus").textContent =
+        "SDK capability incomplete";
+    }
+  }catch{
+    document.getElementById("sdkStatus").textContent =
+      "SDK connection failed";
+  }
+}
+
+async function prepareSwap(){
+  const result = document.getElementById("result");
+
+  const payload = {
+    sourceAsset: document.getElementById("fromAsset").value.trim(),
+    destinationAsset: document.getElementById("toAsset").value.trim(),
+    amount: document.getElementById("amount").value.trim(),
+    recipient: document.getElementById("recipient").value.trim()
+  };
+
+  const r = await fetch("/api/agent/prepare-swap",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify(payload)
+  });
+
+  const d = await r.json();
+
+  result.style.display="block";
+  result.textContent=JSON.stringify(d,null,2);
+}
+
+boot();
+</script>
+
+</body>
+</html>
