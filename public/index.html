@@ -222,7 +222,7 @@ button{
 <script>
 async function boot(){
   try{
-    const r = await fetch("/api/capabilities");
+    const r = await fetch("/api/status");
     const d = await r.json();
 
     if(
